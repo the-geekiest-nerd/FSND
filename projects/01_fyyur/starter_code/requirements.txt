@@ -1,4 +1,5 @@
 babel
 python-dateutil==2.8.1
+flask-migrate
 flask-moment
 flask-wtf
