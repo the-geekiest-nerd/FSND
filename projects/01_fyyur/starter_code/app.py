@@ -197,13 +197,13 @@ def show_venue(venue_id):
         data["past_shows"] = join_query.filter(
             Show.venue_id == venue_query.id,
             Show.start_time <= datetime.now()
-        ).all()
+        ).order_by(Show.start_time).all()
 
     if data["upcoming_shows_count"] > 0:
         data["upcoming_shows"] = join_query.filter(
             Show.venue_id == venue_query.id,
             Show.start_time > datetime.now()
-        ).all()
+        ).order_by(Show.start_time).all()
 
     return render_template('pages/show_venue.html', venue=data)
 
@@ -347,13 +347,13 @@ def show_artist(artist_id):
         data["past_shows"] = join_query.filter(
             Show.artist_id == artist_query.id,
             Show.start_time <= datetime.now()
-        ).all()
+        ).order_by(Show.start_time).all()
 
     if data["upcoming_shows_count"] > 0:
         data["upcoming_shows"] = join_query.filter(
             Show.artist_id == artist_query.id,
             Show.start_time > datetime.now()
-        ).all()
+        ).order_by(Show.start_time).all()
 
     return render_template('pages/show_artist.html', artist=data)
 
@@ -502,7 +502,7 @@ def shows():
         Artist.name.label("artist_name"),
         Artist.image_link.label("artist_image_link"),
         Show.start_time.label("start_time")
-    ).all()
+    ).order_by(Show.start_time).all()
 
     return render_template('pages/shows.html', shows=data)
 
@@ -526,8 +526,8 @@ def create_show_submission():
         form_data["start_time"] = request.form["start_time"]
 
         new_show = Show(
-            venue_id=form_data["artist_id"],
-            artist_id=form_data["venue_id"],
+            artist_id=form_data["artist_id"],
+            venue_id=form_data["venue_id"],
             start_time=form_data["start_time"]
         )
 
