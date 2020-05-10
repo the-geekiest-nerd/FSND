@@ -3,9 +3,11 @@
 # ----------------------------------------------------------------------------#
 
 import json
+import sys
+
 import dateutil.parser
 import babel
-from flask import Flask, render_template, request, Response, flash, redirect, url_for
+from flask import Flask, render_template, request, Response, flash, redirect, url_for, jsonify
 from flask_moment import Moment
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
@@ -114,7 +116,9 @@ def index():
 @app.route('/venues')
 def venues():
     data = []
-    venue_query_result = Venue.query.with_entities(Venue.city, Venue.state).group_by(Venue.city, Venue.state)
+    venue_query_result = Venue.query.with_entities(
+        Venue.city, Venue.state
+    ).group_by(Venue.city, Venue.state).order_by(Venue.state)
 
     for v in venue_query_result:
         venue_name_query_result = Venue.query.with_entities(
@@ -204,25 +208,71 @@ def create_venue_form():
 
 @app.route('/venues/create', methods=['POST'])
 def create_venue_submission():
-    # TODO: insert form data as a new Venue record in the db, instead
-    # TODO: modify data to be the data object returned from db insertion
+    error = False
+    form_data = {}
 
-    # on successful db insert, flash success
-    flash('Venue ' + request.form['name'] + ' was successfully listed!')
-    # TODO: on unsuccessful db insert, flash an error instead.
-    # e.g., flash('An error occurred. Venue ' + data.name + ' could not be listed.')
-    # see: http://flask.pocoo.org/docs/1.0/patterns/flashing/
+    try:
+        form_data["name"] = request.form["name"]
+        form_data["city"] = request.form["city"]
+        form_data["state"] = request.form["state"]
+        form_data["address"] = request.form["address"]
+        form_data["phone"] = request.form["phone"]
+        form_data["genres"] = ", ".join(request.form.getlist("genres"))
+        form_data["facebook_link"] = request.form["facebook_link"]
+
+        new_venue = Venue(
+            name=form_data["name"],
+            city=form_data["city"],
+            state=form_data["state"],
+            address=form_data["address"],
+            phone=form_data["phone"],
+            genres=form_data["genres"],
+            facebook_link=form_data["facebook_link"],
+            image_link="",
+            website="",
+            seeking_talent=False,
+            seeking_description=""
+        )
+
+        db.session.add(new_venue)
+        db.session.commit()
+
+    except:
+        error = True
+        db.session.rollback()
+        print(sys.exc_info(), file=sys.stderr)
+
+    finally:
+        db.session.close()
+        if error:
+            # on unsuccessful db insert, flash an error
+            flash('An error occurred. Venue {} could not be listed.'.format(form_data["name"]))
+        else:
+            # on successful db insert, flash success
+            flash('Venue {} was successfully listed!'.format(form_data['name']))
+
     return render_template('pages/home.html')
 
 
 @app.route('/venues/<venue_id>', methods=['DELETE'])
 def delete_venue(venue_id):
-    # TODO: Complete this endpoint for taking a venue_id, and using
-    # SQLAlchemy ORM to delete a record. Handle cases where the session commit could fail.
+    error = False
 
-    # BONUS CHALLENGE: Implement a button to delete a Venue on a Venue Page, have it so that
-    # clicking that button delete it from the db then redirect the user to the homepage
-    return None
+    try:
+        Venue.query.filter_by(id=venue_id).delete()
+        db.session.commit()
+
+    except:
+        error = True
+        db.session.rollback()
+        print(sys.exc_info(), file=sys.stderr)
+
+    finally:
+        db.session.close()
+        if error:
+            return jsonify({"success": False})
+
+    return jsonify({"success": True})
 
 
 #  Artists
