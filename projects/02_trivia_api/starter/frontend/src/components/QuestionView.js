@@ -10,6 +10,7 @@ class QuestionView extends Component {
     super();
     this.state = {
       questions: [],
+      searchTerm: '',
       page: 1,
       totalQuestions: 0,
       categories: {},
@@ -23,7 +24,7 @@ class QuestionView extends Component {
 
   getQuestions = () => {
     $.ajax({
-      url: `/questions?page=${this.state.page}`,
+      url: `/questions?page=${this.state.page}&search_term=${this.state.searchTerm}`,
       type: "GET",
       success: (result) => {
         this.setState({
@@ -77,27 +78,32 @@ class QuestionView extends Component {
   }
 
   submitSearch = (searchTerm) => {
-    $.ajax({
-      url: `/questions/search`,
-      type: "POST",
-      dataType: 'json',
-      contentType: 'application/json',
-      data: JSON.stringify({searchTerm: searchTerm}),
-      xhrFields: {
-        withCredentials: true
-      },
-      crossDomain: true,
-      success: (result) => {
-        this.setState({
-          questions: result.questions,
-          totalQuestions: result.total_questions,
-          currentCategory: result.current_category })
-        return;
-      },
-      error: (error) => {
-        alert('Unable to load questions. Please try your request again')
-        return;
-      }
+    this.setState({
+        page: 1,
+        searchTerm: searchTerm
+    }, () => {
+        $.ajax({
+            url: `/questions/search`,
+            type: "POST",
+            dataType: 'json',
+            contentType: 'application/json',
+            data: JSON.stringify({searchTerm: searchTerm}),
+            xhrFields: {
+            withCredentials: true
+            },
+            crossDomain: true,
+            success: (result) => {
+            this.setState({
+              questions: result.questions,
+              totalQuestions: result.total_questions,
+              currentCategory: result.current_category })
+            return;
+            },
+            error: (error) => {
+            alert('Unable to load questions. Please try your request again')
+            return;
+            }
+        })
     })
   }
 

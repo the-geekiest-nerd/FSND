@@ -46,26 +46,34 @@ def create_app(test_config=None):
 
     @app.route('/questions')
     def get_questions():
+        search_term = request.args.get('search_term', '')
         page = request.args.get('page', 1, type=int)
         start = (page - 1) * QUESTIONS_PER_PAGE
         end = start + QUESTIONS_PER_PAGE
 
-        questions_query = Question.query.order_by(Question.id).all()
-        questions_data = [question.format() for question in questions_query]
+        try:
+            questions_query = Question.query.filter(
+                Question.question.ilike("%{}%".format(search_term))
+            ).order_by(Question.id).all()
+            questions_data = [question.format() for question in questions_query]
 
-        categories_query = Category.query.order_by(Category.id).all()
-        categories_data = {}
+            categories_query = Category.query.order_by(Category.id).all()
+            categories_data = {}
 
-        for category in categories_query:
-            categories_data[category.id] = category.type
+            for category in categories_query:
+                categories_data[category.id] = category.type
 
-        return jsonify({
-            'success': True,
-            'questions': questions_data[start:end],
-            'total_questions': len(questions_data),
-            'categories': categories_data,
-            'current_category': None
-        })
+            return jsonify({
+                'success': True,
+                'questions': questions_data[start:end],
+                'total_questions': len(questions_data),
+                'categories': categories_data,
+                'current_category': None,
+                'search_term': search_term
+            })
+
+        except:
+            abort(500)
 
     @app.route('/questions/<int:question_id>', methods=['DELETE'])
     def delete_question_by_id(question_id):
@@ -104,17 +112,6 @@ def create_app(test_config=None):
 
         except:
             abort(500)
-
-    '''
-    @TODO: 
-    Create a POST endpoint to get questions based on a search term. 
-    It should return any questions for whom the search term 
-    is a substring of the question. 
-  
-    TEST: Search by any phrase. The questions list will update to include 
-    only question that include that string within their question. 
-    Try using the word "title" to start. 
-    '''
 
     @app.route('/questions/search', methods=['POST'])
     def search_questions():
