@@ -50,7 +50,7 @@ def create_app(test_config=None):
         start = (page - 1) * QUESTIONS_PER_PAGE
         end = start + QUESTIONS_PER_PAGE
 
-        questions_query = Question.query.all()
+        questions_query = Question.query.order_by(Question.id).all()
         questions_data = [question.format() for question in questions_query]
 
         categories_query = Category.query.order_by(Category.id).all()
@@ -115,6 +115,36 @@ def create_app(test_config=None):
     only question that include that string within their question. 
     Try using the word "title" to start. 
     '''
+
+    @app.route('/questions/search', methods=['POST'])
+    def search_questions():
+        questions_search_term = request.get_json()['searchTerm']
+        page = request.args.get('page', 1, type=int)
+        start = (page - 1) * QUESTIONS_PER_PAGE
+        end = start + QUESTIONS_PER_PAGE
+
+        try:
+            questions_query = Question.query.filter(
+                Question.question.ilike("%{}%".format(questions_search_term))
+            ).order_by(Question.id).all()
+            questions_data = [question.format() for question in questions_query]
+
+            categories_query = Category.query.order_by(Category.id).all()
+            categories_data = {}
+
+            for category in categories_query:
+                categories_data[category.id] = category.type
+
+            return jsonify({
+                'success': True,
+                'questions': questions_data[start:end],
+                'total_questions': len(questions_data),
+                'categories': categories_data,
+                'current_category': None
+            })
+
+        except:
+            abort(500)
 
     '''
     @TODO: 
