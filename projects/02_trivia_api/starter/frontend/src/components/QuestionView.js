@@ -62,6 +62,7 @@ class QuestionView extends Component {
 
   getByCategory= (id) => {
     this.setState({
+        page: 1,
         currentCategory: id
     }, () => {
         $.ajax({

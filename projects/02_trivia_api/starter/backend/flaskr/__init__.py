@@ -40,7 +40,6 @@ def create_app(test_config=None):
             categories_data[category.id] = category.type
 
         return jsonify({
-            'success': True,
             'categories': categories_data
         })
 
@@ -68,7 +67,6 @@ def create_app(test_config=None):
                 categories_data[category.id] = category.type
 
             return jsonify({
-                'success': True,
                 'questions': questions_data[start:end],
                 'total_questions': len(questions_data),
                 'categories': categories_data,
@@ -135,7 +133,6 @@ def create_app(test_config=None):
                 categories_data[category.id] = category.type
 
             return jsonify({
-                'success': True,
                 'questions': questions_data[:QUESTIONS_PER_PAGE],
                 'total_questions': len(questions_data),
                 'categories': categories_data,
@@ -163,7 +160,6 @@ def create_app(test_config=None):
                 categories_data[category.id] = category.type
 
             return jsonify({
-                'success': True,
                 'questions': questions_data[:QUESTIONS_PER_PAGE],
                 'total_questions': len(questions_data),
                 'categories': categories_data,
