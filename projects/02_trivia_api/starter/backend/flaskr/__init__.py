@@ -97,7 +97,7 @@ def create_app(test_config=None):
         try:
             request_body = request.get_json()
             if request_body['question'] == '' or request_body['answer'] == '':
-                abort(422)
+                abort(400)
 
             new_question = Question(
                 request_body['question'],
@@ -118,8 +118,14 @@ def create_app(test_config=None):
     @app.route('/questions/search', methods=['POST'])
     def search_questions():
         try:
-            questions_search_term = request.get_json()['searchTerm']
-            current_category = request.get_json()['currentCategory']
+            request_body = request.get_json()
+
+            if 'searchTerm' not in request_body or 'currentCategory' not in request_body:
+                abort(400)
+
+            questions_search_term = request_body['searchTerm']
+            current_category = request_body['currentCategory']
+
             questions_query = Question.query.filter(
                 Question.category == current_category,
                 Question.question.ilike("%{}%".format(questions_search_term))
@@ -195,6 +201,7 @@ def create_app(test_config=None):
             'question': next_question
         })
 
+    @app.errorhandler(400)
     @app.errorhandler(404)
     @app.errorhandler(422)
     @app.errorhandler(500)
