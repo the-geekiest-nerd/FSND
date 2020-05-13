@@ -14,19 +14,27 @@ def create_app(test_config=None):
     app = Flask(__name__)
     setup_db(app)
 
-    '''
-    @TODO: Set up CORS. Allow '*' for origins. Delete the sample route after completing the TODOs
-    '''
+    CORS(app, resources={r"/api/*": {"origins": "*"}})
 
-    '''
-    @TODO: Use the after_request decorator to set Access-Control-Allow
-    '''
+    @app.after_request
+    def after_request(response):
+        response.headers.add('Access-Control-Allow-Headers', 'Content-Type, Authorization')
+        response.headers.add('Access-Control-Allow-Methods', 'GET, POST, PATCH, DELETE, OPTIONS')
+        return response
 
-    '''
-    @TODO: 
-    Create an endpoint to handle GET requests 
-    for all available categories.
-    '''
+    @app.route('/')
+    def health():
+        return jsonify({'health': 'Running!!'})
+
+    @app.route('/categories')
+    def get_categories():
+        categories_query = Category.query.order_by(Category.id).all()
+        categories_data = [category.format() for category in categories_query]
+
+        return jsonify({
+            'success': True,
+            'categories': categories_data
+        })
 
     '''
     @TODO: 
@@ -40,6 +48,20 @@ def create_app(test_config=None):
     ten questions per page and pagination at the bottom of the screen for three pages.
     Clicking on the page numbers should update the questions. 
     '''
+    @app.route('/questions')
+    def get_questions():
+        page = request.args.get('page', 1, type=int)
+        start = (page - 1) * QUESTIONS_PER_PAGE
+        end = start + QUESTIONS_PER_PAGE
+
+        questions_query = Question.query.all()
+        questions_data = [question.format() for question in questions_query]
+
+        return jsonify({
+            'success': True,
+            'questions': questions_data[start:end],
+            'total_questions': len(questions_data)
+        })
 
     '''
     @TODO: 
