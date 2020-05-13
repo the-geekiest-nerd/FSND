@@ -1,4 +1,6 @@
 import os
+import sys
+
 from flask import Flask, request, abort, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
@@ -14,7 +16,7 @@ def create_app(test_config=None):
     app = Flask(__name__)
     setup_db(app)
 
-    CORS(app, resources={r"/api/*": {"origins": "*"}})
+    CORS(app, resources={r"/*": {"origins": "*"}})
 
     @app.after_request
     def after_request(response):
@@ -36,18 +38,6 @@ def create_app(test_config=None):
             'categories': categories_data
         })
 
-    '''
-    @TODO: 
-    Create an endpoint to handle GET requests for questions, 
-    including pagination (every 10 questions). 
-    This endpoint should return a list of questions, 
-    number of total questions, current category, categories. 
-  
-    TEST: At this point, when you start the application
-    you should see questions and categories generated,
-    ten questions per page and pagination at the bottom of the screen for three pages.
-    Clicking on the page numbers should update the questions. 
-    '''
     @app.route('/questions')
     def get_questions():
         page = request.args.get('page', 1, type=int)
@@ -57,19 +47,33 @@ def create_app(test_config=None):
         questions_query = Question.query.all()
         questions_data = [question.format() for question in questions_query]
 
+        categories_query = Category.query.order_by(Category.id).all()
+        categories_data = {}
+
+        for category in categories_query:
+            categories_data[category.id] = category.type
+
         return jsonify({
             'success': True,
             'questions': questions_data[start:end],
-            'total_questions': len(questions_data)
+            'total_questions': len(questions_data),
+            'categories': categories_data,
+            'current_category': None
         })
 
-    '''
-    @TODO: 
-    Create an endpoint to DELETE question using a question ID. 
-  
-    TEST: When you click the trash icon next to a question, the question will be removed.
-    This removal will persist in the database and when you refresh the page. 
-    '''
+    @app.route('/questions/<int:question_id>', methods=['DELETE'])
+    def delete_question_by_id(question_id):
+        question = Question.query.get_or_404(question_id)
+
+        try:
+            question.delete()
+            return jsonify({
+                'success': True
+            })
+
+        except:
+            print(sys.exc_info(), file=sys.stderr)
+            abort(500)
 
     '''
     @TODO: 
@@ -114,10 +118,14 @@ def create_app(test_config=None):
     and shown whether they were correct or not. 
     '''
 
-    '''
-    @TODO: 
-    Create error handlers for all expected errors 
-    including 404 and 422. 
-    '''
+    @app.errorhandler(404)
+    @app.errorhandler(422)
+    @app.errorhandler(500)
+    def error_handler(error):
+        return jsonify({
+            'success': False,
+            'error': error.code,
+            'message': error.description
+        }), error.code
 
     return app
