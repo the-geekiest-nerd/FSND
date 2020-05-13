@@ -23,8 +23,9 @@ class QuestionView extends Component {
   }
 
   getQuestions = () => {
+    let category = this.state.currentCategory === null ? '' : this.state.currentCategory;
     $.ajax({
-      url: `/questions?page=${this.state.page}&search_term=${this.state.searchTerm}`,
+      url: `/questions?page=${this.state.page}&search_term=${this.state.searchTerm}&current_category=${category}`,
       type: "GET",
       success: (result) => {
         this.setState({
@@ -60,20 +61,24 @@ class QuestionView extends Component {
   }
 
   getByCategory= (id) => {
-    $.ajax({
-      url: `/categories/${id}/questions`, //TODO: update request URL
-      type: "GET",
-      success: (result) => {
-        this.setState({
-          questions: result.questions,
-          totalQuestions: result.total_questions,
-          currentCategory: result.current_category })
-        return;
-      },
-      error: (error) => {
-        alert('Unable to load questions. Please try your request again')
-        return;
-      }
+    this.setState({
+        currentCategory: id
+    }, () => {
+        $.ajax({
+            url: `/categories/${id}/questions?search_term=${this.state.searchTerm}`,
+            type: "GET",
+            success: (result) => {
+                this.setState({
+                    questions: result.questions,
+                    totalQuestions: result.total_questions,
+                    currentCategory: result.current_category })
+                return;
+            },
+            error: (error) => {
+            alert('Unable to load questions. Please try your request again')
+                return;
+            }
+        })
     })
   }
 
@@ -87,17 +92,17 @@ class QuestionView extends Component {
             type: "POST",
             dataType: 'json',
             contentType: 'application/json',
-            data: JSON.stringify({searchTerm: searchTerm}),
+            data: JSON.stringify({searchTerm: searchTerm, currentCategory: this.state.currentCategory}),
             xhrFields: {
             withCredentials: true
             },
             crossDomain: true,
             success: (result) => {
-            this.setState({
-              questions: result.questions,
-              totalQuestions: result.total_questions,
-              currentCategory: result.current_category })
-            return;
+                this.setState({
+                  questions: result.questions,
+                  totalQuestions: result.total_questions,
+                  currentCategory: result.current_category })
+                return;
             },
             error: (error) => {
             alert('Unable to load questions. Please try your request again')

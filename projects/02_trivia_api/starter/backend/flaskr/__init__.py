@@ -47,14 +47,18 @@ def create_app(test_config=None):
     @app.route('/questions')
     def get_questions():
         search_term = request.args.get('search_term', '')
+        current_category = request.args.get('current_category', None)
         page = request.args.get('page', 1, type=int)
         start = (page - 1) * QUESTIONS_PER_PAGE
         end = start + QUESTIONS_PER_PAGE
 
         try:
-            questions_query = Question.query.filter(
-                Question.question.ilike("%{}%".format(search_term))
-            ).order_by(Question.id).all()
+            questions_query = Question.query.filter(Question.question.ilike("%{}%".format(search_term)))
+
+            if current_category != '':
+                questions_query = questions_query.filter(Question.category == current_category)
+
+            questions_query = questions_query.order_by(Question.id).all()
             questions_data = [question.format() for question in questions_query]
 
             categories_query = Category.query.order_by(Category.id).all()
@@ -68,7 +72,7 @@ def create_app(test_config=None):
                 'questions': questions_data[start:end],
                 'total_questions': len(questions_data),
                 'categories': categories_data,
-                'current_category': None,
+                'current_category': current_category,
                 'search_term': search_term
             })
 
@@ -115,13 +119,11 @@ def create_app(test_config=None):
 
     @app.route('/questions/search', methods=['POST'])
     def search_questions():
-        questions_search_term = request.get_json()['searchTerm']
-        page = request.args.get('page', 1, type=int)
-        start = (page - 1) * QUESTIONS_PER_PAGE
-        end = start + QUESTIONS_PER_PAGE
-
         try:
+            questions_search_term = request.get_json()['searchTerm']
+            current_category = request.get_json()['currentCategory']
             questions_query = Question.query.filter(
+                Question.category == current_category,
                 Question.question.ilike("%{}%".format(questions_search_term))
             ).order_by(Question.id).all()
             questions_data = [question.format() for question in questions_query]
@@ -134,23 +136,43 @@ def create_app(test_config=None):
 
             return jsonify({
                 'success': True,
-                'questions': questions_data[start:end],
+                'questions': questions_data[:QUESTIONS_PER_PAGE],
                 'total_questions': len(questions_data),
                 'categories': categories_data,
-                'current_category': None
+                'current_category': current_category,
+                'search_term': questions_search_term
             })
 
         except:
             abort(500)
 
-    '''
-    @TODO: 
-    Create a GET endpoint to get questions based on category. 
-  
-    TEST: In the "List" tab / main screen, clicking on one of the 
-    categories in the left column will cause only questions of that 
-    category to be shown. 
-    '''
+    @app.route('/categories/<category_id>/questions')
+    def get_category_specific_question(category_id):
+        try:
+            questions_search_term = request.args.get('search_term', '')
+            questions_query = Question.query.filter(
+                Question.category == category_id,
+                Question.question.ilike("%{}%".format(questions_search_term))
+            ).order_by(Question.id).all()
+            questions_data = [question.format() for question in questions_query]
+
+            categories_query = Category.query.order_by(Category.id).all()
+            categories_data = {}
+
+            for category in categories_query:
+                categories_data[category.id] = category.type
+
+            return jsonify({
+                'success': True,
+                'questions': questions_data[:QUESTIONS_PER_PAGE],
+                'total_questions': len(questions_data),
+                'categories': categories_data,
+                'current_category': category_id,
+                'search_term': questions_search_term
+            })
+
+        except:
+            abort(500)
 
     '''
     @TODO: 
