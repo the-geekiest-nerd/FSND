@@ -52,49 +52,384 @@ Setting the `FLASK_ENV` variable to `development` will detect file changes and r
 
 Setting the `FLASK_APP` variable to `flaskr` directs flask to use the `flaskr` directory and the `__init__.py` file to find the application. 
 
-## Tasks
+## API Reference
 
-One note before you delve into your tasks: for each endpoint you are expected to define the endpoint and response data. The frontend will be a plentiful resource because it is set up to expect certain endpoints and response data formats already. You should feel free to specify endpoints in your own way; if you do so, make sure to update the frontend or you will get some unexpected behavior. 
+## Getting Started
+Base URL: At present, this app can only be run locally. The backend app is hosted at the default `http://localhost:5000`, which is set as a proxy
+in the frontend configuration.
 
-1. Use Flask-CORS to enable cross-domain requests and set response headers. 
-2. Create an endpoint to handle GET requests for questions, including pagination (every 10 questions). This endpoint should return a list of questions, number of total questions, current category, categories. 
-3. Create an endpoint to handle GET requests for all available categories. 
-4. Create an endpoint to DELETE question using a question ID. 
-5. Create an endpoint to POST a new question, which will require the question and answer text, category, and difficulty score. 
-6. Create a POST endpoint to get questions based on category. 
-7. Create a POST endpoint to get questions based on a search term. It should return any questions for whom the search term is a substring of the question. 
-8. Create a POST endpoint to get questions to play the quiz. This endpoint should take category and previous question parameters and return a random questions within the given category, if provided, and that is not one of the previous questions. 
-9. Create error handlers for all expected errors including 400, 404, 422 and 500. 
+Authentication: This version of the application does not require any kind of authentication.
 
-REVIEW_COMMENT
+## Error Handling
+Errors are returned as JSON objects in the following format:
 ```
-This README is missing documentation of your endpoints. Below is an example for your endpoint to get all categories. Please use it as a reference for creating your documentation and resubmit your code. 
-
-Endpoints
-GET '/categories'
-GET ...
-POST ...
-DELETE ...
-
-GET '/categories'
-- Fetches a dictionary of categories in which the keys are the ids and the value is the corresponding string of the category
-- Request Arguments: None
-- Returns: An object with a single key, categories, that contains a object of id: category_string key:value pairs. 
-{'1' : "Science",
-'2' : "Art",
-'3' : "Geography",
-'4' : "History",
-'5' : "Entertainment",
-'6' : "Sports"}
-
+{
+    "error": 404,
+    "message": "The requested URL was not found on the server. If you entered the URL manually please check your spelling and try again.",
+    "success": false
+}
 ```
 
+The API will return the following errors based on how the request fails:
+ - 400: Bad Request
+ - 404: Not Found
+ - 405: Method Not Allowed
+ - 422: Unprocessable Entity
+ - 500: Internal Server Error
+
+## Endpoints
+
+#### GET /
+ - General
+   - root endpoint
+   - can also work to check if the api is up and running
+ 
+ - Sample Request
+   - `http://localhost:5000`
+
+<details>
+<summary>Sample Response</summary>
+
+```
+{
+    "health": "Running!!"
+}
+```
+
+</details>
+
+#### GET /categories
+ - General
+   - get all the available categories
+ 
+ - Sample Request
+   - `http://localhost:5000/categories`
+
+<details>
+<summary>Sample Response</summary>
+
+```
+{
+    "categories": {
+        "1": "Science",
+        "2": "Art",
+        "3": "Geography",
+        "4": "History",
+        "5": "Entertainment",
+        "6": "Sports"
+    }
+}
+```
+
+</details>
+
+#### GET /questions
+ - General
+   - get questions list
+   - questions are paginated in groups of <b>10</b> (can not be configured from the front end)
+ 
+ - Query Parameters
+   - page: Optional
+   - search_term: Optional
+   - current_category: Optional
+ 
+ - Sample Requests
+   - `http://localhost:5000/questions`
+   - `http://localhost:5000/questions?page=2`
+   - `http://localhost:5000/questions?search_term=w`
+
+<details>
+<summary>Sample Response for http://localhost:5000/questions</summary>
+
+```
+{
+    "categories": {
+        "1": "Science",
+        "2": "Art",
+        "3": "Geography",
+        "4": "History",
+        "5": "Entertainment",
+        "6": "Sports"
+    },
+    "current_category": null,
+    "questions": [
+        {
+            "answer": "Uruguay",
+            "category": 6,
+            "difficulty": 4,
+            "id": 11,
+            "question": "Which country won the first ever soccer World Cup in 1930?"
+        },
+        {
+            "answer": "George Washington Carver",
+            "category": 4,
+            "difficulty": 2,
+            "id": 12,
+            "question": "Who invented Peanut Butter?"
+        },
+        {
+            "answer": "Lake Victoria",
+            "category": 3,
+            "difficulty": 2,
+            "id": 13,
+            "question": "What is the largest lake in Africa?"
+        },
+        {
+            "answer": "The Palace of Versailles",
+            "category": 3,
+            "difficulty": 3,
+            "id": 14,
+            "question": "In which royal palace would you find the Hall of Mirrors?"
+        },
+        {
+            "answer": "Agra",
+            "category": 3,
+            "difficulty": 2,
+            "id": 15,
+            "question": "The Taj Mahal is located in which Indian city?"
+        },
+        {
+            "answer": "Escher",
+            "category": 2,
+            "difficulty": 1,
+            "id": 16,
+            "question": "Which Dutch graphic artist–initials M C was a creator of optical illusions?"
+        },
+        {
+            "answer": "Mona Lisa",
+            "category": 2,
+            "difficulty": 3,
+            "id": 17,
+            "question": "La Giaconda is better known as what?"
+        },
+        {
+            "answer": "One",
+            "category": 2,
+            "difficulty": 4,
+            "id": 18,
+            "question": "How many paintings did Van Gogh sell in his lifetime?"
+        },
+        {
+            "answer": "Jackson Pollock",
+            "category": 2,
+            "difficulty": 2,
+            "id": 19,
+            "question": "Which American artist was a pioneer of Abstract Expressionism, and a leading exponent of action painting?"
+        },
+        {
+            "answer": "The Liver",
+            "category": 1,
+            "difficulty": 4,
+            "id": 20,
+            "question": "What is the heaviest organ in the human body?"
+        }
+    ],
+    "search_term": "",
+    "total_questions": 16
+}
+```
+  
+</details>
+
+#### DELETE /questions/{question_id}
+ - General
+   - delete a question using question_id
+ 
+ - Sample Request
+   - `http://localhost:5000/questions/1`
+
+<details>
+<summary>Sample Response</summary>
+
+```
+{
+    "success": true
+}
+```
+  
+</details>
+
+#### POST /questions
+ - General
+   - create a question
+ 
+ - Request Body
+   - question: string, required
+   - answer: string, required
+   - category: string | number, required
+   - difficulty: number, required
+ 
+ - Sample Request
+   - `http://localhost:5000/questions`
+   - Request Body
+     ```
+       {
+            "question": "Which is the test framework used in this project?",
+            "answer": "unittest",
+            "category": "1",
+            "difficulty": 1
+        }
+     ```
+
+<details>
+<summary>Sample Response</summary>
+
+```
+{
+    "success": true
+}
+```
+  
+</details>
+
+#### POST /questions/search
+ - General
+   - search the questions list based on a search term or category
+ 
+ - Request Body
+   - searchTerm: string, required
+   - currentCategory: string, required
+ 
+ - Sample Request
+   - `http://localhost:5000/questions/search`
+   - Request Body
+     ```
+       {
+            "searchTerm": "who",
+            "currentCategory": "1"
+        }
+     ```
+
+<details>
+<summary>Sample Response</summary>
+
+```
+{
+    "categories": {
+        "1": "Science",
+        "2": "Art",
+        "3": "Geography",
+        "4": "History",
+        "5": "Entertainment",
+        "6": "Sports"
+    },
+    "current_category": "1",
+    "questions": [
+        {
+            "answer": "Alexander Fleming",
+            "category": 1,
+            "difficulty": 3,
+            "id": 21,
+            "question": "Who discovered penicillin?"
+        }
+    ],
+    "search_term": "who",
+    "total_questions": 1
+}
+```
+  
+</details>
+
+#### GET /categories/<category_id>/questions
+ - General
+   - get questions for a particular category
+ 
+ - Sample Request
+   - `http://localhost:5000/categories/2/questions`
+
+<details>
+<summary>Sample Response</summary>
+
+```
+{
+    "categories": {
+        "1": "Science",
+        "2": "Art",
+        "3": "Geography",
+        "4": "History",
+        "5": "Entertainment",
+        "6": "Sports"
+    },
+    "current_category": "2",
+    "questions": [
+        {
+            "answer": "Escher",
+            "category": 2,
+            "difficulty": 1,
+            "id": 16,
+            "question": "Which Dutch graphic artist–initials M C was a creator of optical illusions?"
+        },
+        {
+            "answer": "Mona Lisa",
+            "category": 2,
+            "difficulty": 3,
+            "id": 17,
+            "question": "La Giaconda is better known as what?"
+        },
+        {
+            "answer": "One",
+            "category": 2,
+            "difficulty": 4,
+            "id": 18,
+            "question": "How many paintings did Van Gogh sell in his lifetime?"
+        },
+        {
+            "answer": "Jackson Pollock",
+            "category": 2,
+            "difficulty": 2,
+            "id": 19,
+            "question": "Which American artist was a pioneer of Abstract Expressionism, and a leading exponent of action painting?"
+        }
+    ],
+    "search_term": "",
+    "total_questions": 4
+}
+```
+
+</details>
+
+#### POST /quizzes
+ - General
+   - get random questions from the selected category to play the quiz
+ 
+ - Request Body
+   - previous_questions: array, required (contains a list of questions that have already been played)
+   - quiz_category: object
+     - id: string | number, required
+ 
+ - Sample Request
+   - `http://localhost:5000/quizzes`
+   - Request Body
+     ```
+     {
+        "previous_questions": [16, 17],
+        "quiz_category": {
+            "id": "2"
+        }
+     }
+     ```
+   
+<details>
+<summary>Sample Response</summary>
+
+```
+{
+    "question": {
+        "answer": "One",
+        "category": 2,
+        "difficulty": 4,
+        "id": 18,
+        "question": "How many paintings did Van Gogh sell in his lifetime?"
+    }
+}
+```
+  
+</details>
 
 ## Testing
-To run the tests, run
+For testing the backend, run the following commands (in the exact order):
 ```
 dropdb trivia_test
 createdb trivia_test
 psql trivia_test < trivia.psql
 python test_flaskr.py
-```
