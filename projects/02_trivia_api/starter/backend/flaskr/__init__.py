@@ -235,6 +235,7 @@ def create_app(test_config=None):
 
     @app.errorhandler(400)
     @app.errorhandler(404)
+    @app.errorhandler(405)
     @app.errorhandler(422)
     @app.errorhandler(500)
     def error_handler(error):
