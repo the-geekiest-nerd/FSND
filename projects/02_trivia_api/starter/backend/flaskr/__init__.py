@@ -26,7 +26,7 @@ def create_app(test_config=None):
 
     @app.route('/')
     def health():
-        return jsonify({'health': 'Running!!'})
+        return jsonify({'health': 'Running!!'}), 200
 
     @app.route('/categories')
     def get_categories():
@@ -41,12 +41,13 @@ def create_app(test_config=None):
 
         return jsonify({
             'categories': categories_data
-        })
+        }), 200
 
     @app.route('/questions')
     def get_questions():
         search_term = request.args.get('search_term', '')
         current_category = request.args.get('current_category', None)
+        current_category = None if current_category == '' else current_category
         page = request.args.get('page', 1, type=int)
         start = (page - 1) * QUESTIONS_PER_PAGE
         end = start + QUESTIONS_PER_PAGE
@@ -54,11 +55,15 @@ def create_app(test_config=None):
         try:
             questions_query = Question.query.filter(Question.question.ilike("%{}%".format(search_term)))
 
-            if current_category != '':
+            if current_category is not None:
                 questions_query = questions_query.filter(Question.category == current_category)
 
             questions_query = questions_query.order_by(Question.id).all()
             questions_data = [question.format() for question in questions_query]
+            selected_questions_data = questions_data[start:end]
+
+            if len(selected_questions_data) == 0:
+                raise IndexError
 
             categories_query = Category.query.order_by(Category.id).all()
             categories_data = {}
@@ -67,12 +72,15 @@ def create_app(test_config=None):
                 categories_data[category.id] = category.type
 
             return jsonify({
-                'questions': questions_data[start:end],
+                'questions': selected_questions_data,
                 'total_questions': len(questions_data),
                 'categories': categories_data,
                 'current_category': current_category,
                 'search_term': search_term
-            })
+            }), 200
+
+        except IndexError:
+            abort(404)
 
         except:
             abort(500)
@@ -85,32 +93,33 @@ def create_app(test_config=None):
             question.delete()
             return jsonify({
                 'success': True
-            })
+            }), 200
 
         except:
-            print(sys.exc_info(), file=sys.stderr)
             abort(500)
 
     @app.route('/questions', methods=['POST'])
     def create_question():
-
         try:
             request_body = request.get_json()
             if request_body['question'] == '' or request_body['answer'] == '':
-                abort(400)
+                raise TypeError
 
             new_question = Question(
                 request_body['question'],
                 request_body['answer'],
-                request_body['difficulty'],
-                request_body['category']
+                request_body['category'],
+                request_body['difficulty']
             )
 
             new_question.insert()
 
             return jsonify({
                 'success': True
-            })
+            }), 201
+
+        except TypeError:
+            abort(422)
 
         except:
             abort(500)
@@ -121,15 +130,16 @@ def create_app(test_config=None):
             request_body = request.get_json()
 
             if 'searchTerm' not in request_body or 'currentCategory' not in request_body:
-                abort(400)
+                raise TypeError
 
             questions_search_term = request_body['searchTerm']
             current_category = request_body['currentCategory']
+            questions_query = Question.query.filter(Question.question.ilike("%{}%".format(questions_search_term)))
 
-            questions_query = Question.query.filter(
-                Question.category == current_category,
-                Question.question.ilike("%{}%".format(questions_search_term))
-            ).order_by(Question.id).all()
+            if current_category is not None:
+                questions_query = questions_query.filter(Question.category == current_category)
+
+            questions_query = questions_query.order_by(Question.id).all()
             questions_data = [question.format() for question in questions_query]
 
             categories_query = Category.query.order_by(Category.id).all()
@@ -144,7 +154,10 @@ def create_app(test_config=None):
                 'categories': categories_data,
                 'current_category': current_category,
                 'search_term': questions_search_term
-            })
+            }), 200
+
+        except TypeError:
+            abort(400)
 
         except:
             abort(500)
@@ -159,6 +172,9 @@ def create_app(test_config=None):
             ).order_by(Question.id).all()
             questions_data = [question.format() for question in questions_query]
 
+            if len(questions_data) == 0:
+                raise IndexError
+
             categories_query = Category.query.order_by(Category.id).all()
             categories_data = {}
 
@@ -171,35 +187,51 @@ def create_app(test_config=None):
                 'categories': categories_data,
                 'current_category': category_id,
                 'search_term': questions_search_term
-            })
+            }), 200
+
+        except IndexError:
+            abort(404)
 
         except:
             abort(500)
 
     @app.route('/quizzes', methods=['POST'])
     def play_quiz():
-        request_body = request.get_json()
-        previous_questions = request_body['previous_questions']
-        category_id = request_body['quiz_category']['id']
-        questions_query = Question.query.with_entities(Question.id).filter(Question.id.notin_(previous_questions))
+        try:
+            request_body = request.get_json()
 
-        if category_id != 0:
-            questions_query = questions_query.filter(Question.category == str(category_id))
+            if 'previous_questions' not in request_body \
+                    or 'quiz_category' not in request_body \
+                    or 'id' not in request_body['quiz_category']:
+                raise TypeError
 
-        questions_query = questions_query.order_by(Question.id).all()
-        question_ids = [q.id for q in questions_query]
+            previous_questions = request_body['previous_questions']
+            category_id = request_body['quiz_category']['id']
+            questions_query = Question.query.with_entities(Question.id).filter(Question.id.notin_(previous_questions))
 
-        if len(question_ids) == 0:
+            if category_id != 0:
+                questions_query = questions_query.filter(Question.category == str(category_id))
+
+            questions_query = questions_query.order_by(Question.id).all()
+            question_ids = [q.id for q in questions_query]
+
+            if len(question_ids) == 0:
+                return jsonify({
+                    'question': None
+                }), 200
+
+            random_question_id = random.choice(question_ids)
+            next_question = Question.query.get(random_question_id).format()
+
             return jsonify({
-                'question': None
-            })
+                'question': next_question
+            }), 200
 
-        random_question_id = random.choice(question_ids)
-        next_question = Question.query.get(random_question_id).format()
+        except TypeError:
+            abort(400)
 
-        return jsonify({
-            'question': next_question
-        })
+        except:
+            abort(500)
 
     @app.errorhandler(400)
     @app.errorhandler(404)
